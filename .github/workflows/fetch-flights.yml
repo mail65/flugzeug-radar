@@ -1,0 +1,28 @@
+name: Fetch Flight Data
+on:
+  schedule:
+    - cron: '*/5 * * * *'   # Every 5 minutes
+  workflow_dispatch:         # Manual trigger
+
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Fetch flight data
+        run: |
+          curl -s "https://api.adsb.lol/v2/lat/53.68/lon/10.09/dist/15" \
+            -H "User-Agent: BueroRadar/1.0" \
+            -o data.json
+          echo "Aircraft count: $(python3 -c "import json; d=json.load(open('data.json')); print(len(d.get('ac',[])))")"
+      
+      - name: Commit data
+        run: |
+          git config user.name "Büro-Radar Bot"
+          git config user.email "bot@bueroradar.local"
+          git add data.json
+          git diff --cached --quiet || git commit -m "Update flight data $(date -u +%H:%M)"
+          git push

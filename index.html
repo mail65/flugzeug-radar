@@ -727,9 +727,8 @@ const ICAO_COUNTRY = {
 };
 
 async function fetchFlights() {
-  // Using adsb.lol - free, open, CORS-friendly ADS-B API
-  const distNm = Math.round(RADIUS_KM * 0.54); // km to nautical miles
-  const url = `https://api.adsb.lol/v2/lat/${OFFICE.lat}/lon/${OFFICE.lon}/dist/${distNm}`;
+  // Reads local data.json (updated every 5 min via GitHub Actions) — no CORS issues!
+  const url = 'data.json?t=' + Date.now();
 
   try {
     const res = await fetch(url);
@@ -767,10 +766,12 @@ async function fetchFlights() {
     drawRadar(planes.map(p => [p.icao, p.callsign, p.country, null, null, p.longitude, p.latitude, p.altitude, p.on_ground, p.velocity, p.true_track, p.vertical_rate, null, p.geo_altitude]));
 
     document.getElementById('last-update').textContent = new Date().toLocaleTimeString('de-DE');
-    document.getElementById('live-status').textContent = `Live · ${planes.length} Flieger`;
+    const dataAge = data.now ? Math.round((Date.now()/1000 - data.now) / 60) : 0;
+    const ageStr = dataAge < 2 ? 'Gerade aktuell' : `vor ${dataAge} Min`;
+    document.getElementById('live-status').textContent = `Live · ${planes.length} Flieger · ${ageStr}`;
 
   } catch(e) {
-    document.getElementById('live-status').textContent = '⚠️ API Fehler';
+    document.getElementById('live-status').textContent = '⏳ Wird geladen...';
     console.error('Fetch error:', e);
   }
 
