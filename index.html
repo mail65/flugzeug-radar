@@ -1,0 +1,864 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>✈️ Büro-Radar — Poppenbüttel</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --sky: #0a1628;
+    --sky2: #0d2045;
+    --blue: #1a6cff;
+    --cyan: #00d4ff;
+    --green: #00ff88;
+    --orange: #ff9500;
+    --red: #ff3b30;
+    --white: #ffffff;
+    --dim: rgba(255,255,255,0.5);
+  }
+
+  body {
+    background: var(--sky);
+    color: var(--white);
+    font-family: 'SF Pro Display', 'Helvetica Neue', system-ui, sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Stars background */
+  .stars {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: radial-gradient(ellipse at bottom, #1b2a45 0%, #090d1a 100%);
+    z-index: 0;
+  }
+  .stars::before, .stars::after {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background-image:
+      radial-gradient(1px 1px at 10% 15%, rgba(255,255,255,0.4) 0%, transparent 100%),
+      radial-gradient(1px 1px at 30% 40%, rgba(255,255,255,0.3) 0%, transparent 100%),
+      radial-gradient(1px 1px at 50% 10%, rgba(255,255,255,0.5) 0%, transparent 100%),
+      radial-gradient(1px 1px at 70% 25%, rgba(255,255,255,0.4) 0%, transparent 100%),
+      radial-gradient(1px 1px at 85% 60%, rgba(255,255,255,0.3) 0%, transparent 100%),
+      radial-gradient(1px 1px at 20% 80%, rgba(255,255,255,0.2) 0%, transparent 100%),
+      radial-gradient(1px 1px at 60% 70%, rgba(255,255,255,0.4) 0%, transparent 100%),
+      radial-gradient(1px 1px at 90% 90%, rgba(255,255,255,0.3) 0%, transparent 100%);
+  }
+
+  .app {
+    position: relative;
+    z-index: 1;
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 24px 20px;
+  }
+
+  /* Header */
+  .header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 28px;
+  }
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .logo-icon {
+    font-size: 32px;
+    animation: float 3s ease-in-out infinite;
+  }
+  @keyframes float {
+    0%, 100% { transform: translateY(0) rotate(-5deg); }
+    50% { transform: translateY(-6px) rotate(5deg); }
+  }
+  .logo-text h1 {
+    font-size: 22px;
+    font-weight: 700;
+    letter-spacing: -0.5px;
+  }
+  .logo-text p {
+    font-size: 12px;
+    color: var(--cyan);
+    opacity: 0.8;
+  }
+  .live-badge {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(0,255,136,0.1);
+    border: 1px solid rgba(0,255,136,0.3);
+    border-radius: 20px;
+    padding: 6px 14px;
+    font-size: 13px;
+    color: var(--green);
+  }
+  .pulse {
+    width: 8px; height: 8px;
+    background: var(--green);
+    border-radius: 50%;
+    animation: pulse 1.5s ease-in-out infinite;
+  }
+  @keyframes pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.5; transform: scale(0.8); }
+  }
+
+  /* Next Plane Hero */
+  .hero {
+    background: linear-gradient(135deg, rgba(26,108,255,0.15) 0%, rgba(0,212,255,0.08) 100%);
+    border: 1px solid rgba(0,212,255,0.2);
+    border-radius: 20px;
+    padding: 28px;
+    margin-bottom: 20px;
+    position: relative;
+    overflow: hidden;
+  }
+  .hero::before {
+    content: '';
+    position: absolute;
+    top: -50%; right: -20%;
+    width: 200px; height: 200px;
+    background: radial-gradient(circle, rgba(0,212,255,0.1) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  .hero-label {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    color: var(--cyan);
+    margin-bottom: 12px;
+    opacity: 0.8;
+  }
+  .hero-plane {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 20px;
+    flex-wrap: wrap;
+  }
+  .hero-main h2 {
+    font-size: 36px;
+    font-weight: 800;
+    letter-spacing: -1px;
+    margin-bottom: 4px;
+  }
+  .hero-main .route {
+    font-size: 14px;
+    color: var(--dim);
+    margin-bottom: 16px;
+  }
+  .hero-stats {
+    display: flex;
+    gap: 24px;
+    flex-wrap: wrap;
+  }
+  .stat {
+    display: flex;
+    flex-direction: column;
+  }
+  .stat-val {
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--cyan);
+    line-height: 1;
+  }
+  .stat-lbl {
+    font-size: 11px;
+    color: var(--dim);
+    margin-top: 3px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .airline-badge {
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 14px;
+    padding: 16px 20px;
+    text-align: center;
+    min-width: 140px;
+  }
+  .airline-emoji { font-size: 40px; margin-bottom: 8px; }
+  .airline-name { font-size: 14px; font-weight: 600; }
+  .airline-country { font-size: 12px; color: var(--dim); margin-top: 2px; }
+
+  /* Radar ring animation */
+  .radar-anim {
+    position: absolute;
+    bottom: -30px; right: -30px;
+    width: 150px; height: 150px;
+    opacity: 0.15;
+  }
+  .radar-ring {
+    position: absolute;
+    border: 1px solid var(--cyan);
+    border-radius: 50%;
+    animation: radar-pulse 3s ease-out infinite;
+  }
+  .radar-ring:nth-child(1) { width: 50px; height: 50px; top: 50px; left: 50px; animation-delay: 0s; }
+  .radar-ring:nth-child(2) { width: 90px; height: 90px; top: 30px; left: 30px; animation-delay: 0.5s; }
+  .radar-ring:nth-child(3) { width: 130px; height: 130px; top: 10px; left: 10px; animation-delay: 1s; }
+  @keyframes radar-pulse {
+    0% { opacity: 0.8; transform: scale(0.8); }
+    100% { opacity: 0; transform: scale(1.2); }
+  }
+
+  /* Flight list */
+  .section-title {
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    color: var(--dim);
+    margin-bottom: 12px;
+  }
+  .flights-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+  .flight-card {
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 14px;
+    padding: 16px;
+    cursor: pointer;
+    transition: all 0.2s;
+    position: relative;
+    overflow: hidden;
+  }
+  .flight-card:hover {
+    background: rgba(255,255,255,0.06);
+    border-color: rgba(0,212,255,0.3);
+    transform: translateY(-2px);
+  }
+  .flight-card.featured {
+    border-color: rgba(0,212,255,0.4);
+    background: rgba(0,212,255,0.05);
+  }
+  .fc-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 10px;
+  }
+  .fc-callsign {
+    font-size: 18px;
+    font-weight: 700;
+    letter-spacing: 1px;
+  }
+  .fc-flag { font-size: 20px; }
+  .fc-airline {
+    font-size: 12px;
+    color: var(--cyan);
+    margin-bottom: 8px;
+  }
+  .fc-details {
+    display: flex;
+    gap: 16px;
+    font-size: 12px;
+    color: var(--dim);
+  }
+  .altitude-bar {
+    height: 3px;
+    background: rgba(255,255,255,0.1);
+    border-radius: 2px;
+    margin-top: 10px;
+    overflow: hidden;
+  }
+  .altitude-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--blue), var(--cyan));
+    border-radius: 2px;
+    transition: width 0.5s ease;
+  }
+
+  /* Fun fact ticker */
+  .funfact {
+    background: rgba(255,149,0,0.08);
+    border: 1px solid rgba(255,149,0,0.2);
+    border-radius: 12px;
+    padding: 14px 18px;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .funfact-icon { font-size: 20px; }
+  .funfact-text { font-size: 14px; color: rgba(255,255,255,0.85); line-height: 1.4; }
+
+  /* Mini map */
+  .map-container {
+    background: rgba(0,0,0,0.3);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 16px;
+    padding: 20px;
+    margin-bottom: 20px;
+  }
+  #radar-canvas {
+    width: 100%;
+    max-width: 500px;
+    display: block;
+    margin: 0 auto;
+    border-radius: 50%;
+  }
+
+  /* Footer */
+  .footer {
+    text-align: center;
+    font-size: 12px;
+    color: rgba(255,255,255,0.3);
+    padding-top: 16px;
+    border-top: 1px solid rgba(255,255,255,0.05);
+  }
+  .refresh-timer {
+    display: inline-block;
+    width: 30px;
+    height: 4px;
+    background: rgba(255,255,255,0.1);
+    border-radius: 2px;
+    margin: 0 6px;
+    vertical-align: middle;
+    overflow: hidden;
+    position: relative;
+  }
+  .refresh-fill {
+    position: absolute;
+    top: 0; left: 0; height: 100%;
+    background: var(--cyan);
+    border-radius: 2px;
+    transition: width 1s linear;
+  }
+
+  .no-planes {
+    text-align: center;
+    padding: 40px;
+    color: var(--dim);
+  }
+  .no-planes .icon { font-size: 48px; margin-bottom: 12px; }
+
+  @keyframes slide-in {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .flight-card { animation: slide-in 0.3s ease forwards; }
+
+  /* Approaching indicator */
+  .approaching {
+    position: absolute;
+    top: 10px; right: 10px;
+    font-size: 10px;
+    background: rgba(0,255,136,0.15);
+    color: var(--green);
+    padding: 3px 8px;
+    border-radius: 10px;
+    border: 1px solid rgba(0,255,136,0.3);
+  }
+</style>
+</head>
+<body>
+
+<div class="stars"></div>
+
+<div class="app">
+
+  <!-- Header -->
+  <div class="header">
+    <div class="logo">
+      <div class="logo-icon">✈️</div>
+      <div class="logo-text">
+        <h1>Büro-Radar</h1>
+        <p>📍 Poppenbüttel, Hamburg</p>
+      </div>
+    </div>
+    <div class="live-badge">
+      <div class="pulse"></div>
+      <span id="live-status">Live</span>
+    </div>
+  </div>
+
+  <!-- Hero: Next plane -->
+  <div class="hero" id="hero">
+    <div class="radar-anim">
+      <div class="radar-ring"></div>
+      <div class="radar-ring"></div>
+      <div class="radar-ring"></div>
+    </div>
+    <div class="hero-label">✈ Nächstes Flugzeug über dem Büro</div>
+    <div class="hero-plane" id="hero-content">
+      <div class="hero-main">
+        <h2>Lade...</h2>
+        <div class="route">Daten werden abgerufen</div>
+        <div class="hero-stats">
+          <div class="stat"><div class="stat-val">—</div><div class="stat-lbl">Höhe</div></div>
+          <div class="stat"><div class="stat-val">—</div><div class="stat-lbl">Geschw.</div></div>
+          <div class="stat"><div class="stat-val">—</div><div class="stat-lbl">Entfernung</div></div>
+        </div>
+      </div>
+      <div class="airline-badge">
+        <div class="airline-emoji">🔄</div>
+        <div class="airline-name">Laden...</div>
+        <div class="airline-country"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Fun Fact -->
+  <div class="funfact" id="funfact">
+    <div class="funfact-icon">💡</div>
+    <div class="funfact-text" id="funfact-text">Lade Fun Facts über Hamburger Luftraum...</div>
+  </div>
+
+  <!-- Radar -->
+  <div class="map-container">
+    <div class="section-title">🎯 Radar — 15km Radius</div>
+    <canvas id="radar-canvas" width="500" height="500"></canvas>
+  </div>
+
+  <!-- All planes -->
+  <div class="section-title" id="count-label">Flugzeuge in der Nähe</div>
+  <div class="flights-grid" id="flights-grid">
+    <div class="no-planes"><div class="icon">🔍</div><p>Suche...</p></div>
+  </div>
+
+  <!-- Footer -->
+  <div class="footer">
+    <span>Aktualisiert alle 30 Sek</span>
+    <span class="refresh-timer"><div class="refresh-fill" id="timer-bar"></div></span>
+    <span id="last-update">—</span>
+    &nbsp;·&nbsp; Daten: OpenSky Network
+  </div>
+
+</div>
+
+<script>
+// ============================================================
+// CONFIG
+// ============================================================
+const OFFICE = { lat: 53.6797, lon: 10.0934 }; // Poppenbütteler Bogen 92
+const RADIUS_KM = 15;
+const REFRESH_SEC = 30;
+
+// ============================================================
+// AIRLINE DATABASE
+// ============================================================
+const AIRLINES = {
+  'DLH': { name: 'Lufthansa', emoji: '🇩🇪', color: '#0000ff' },
+  'EWG': { name: 'Eurowings', emoji: '💜', color: '#6f2da8' },
+  'AUA': { name: 'Austrian Airlines', emoji: '🇦🇹', color: '#ed2939' },
+  'SWR': { name: 'Swiss Air Lines', emoji: '🇨🇭', color: '#ff0000' },
+  'BAW': { name: 'British Airways', emoji: '🇬🇧', color: '#075aaa' },
+  'AFR': { name: 'Air France', emoji: '🇫🇷', color: '#002395' },
+  'KLM': { name: 'KLM', emoji: '🇳🇱', color: '#00a1e4' },
+  'IBE': { name: 'Iberia', emoji: '🇪🇸', color: '#d81e2f' },
+  'RYR': { name: 'Ryanair', emoji: '🔵', color: '#073590' },
+  'EZY': { name: 'easyJet', emoji: '🟠', color: '#ff6600' },
+  'VLG': { name: 'Vueling', emoji: '🟡', color: '#ffe000' },
+  'TAP': { name: 'TAP Air Portugal', emoji: '🇵🇹', color: '#007a4d' },
+  'SAS': { name: 'SAS Scandinavian', emoji: '🇸🇪', color: '#1e3d8f' },
+  'NAX': { name: 'Norwegian', emoji: '🔴', color: '#d81e05' },
+  'WZZ': { name: 'Wizz Air', emoji: '💗', color: '#c6007e' },
+  'TUI': { name: 'TUI', emoji: '🌍', color: '#e0173d' },
+  'CFG': { name: 'Condor', emoji: '🦅', color: '#ffcc00' },
+  'ETH': { name: 'Ethiopian Airlines', emoji: '🇪🇹', color: '#078b31' },
+  'QTR': { name: 'Qatar Airways', emoji: '🇶🇦', color: '#5c0632' },
+  'UAE': { name: 'Emirates', emoji: '🇦🇪', color: '#d71921' },
+  'PGT': { name: 'Pegasus Airlines', emoji: '🇹🇷', color: '#ff5f00' },
+  'TOM': { name: 'TUIfly', emoji: '✈️', color: '#e0173d' },
+  'DAN': { name: 'Marabu Airlines', emoji: '🦅', color: '#0057b7' },
+  'BEL': { name: 'Brussels Airlines', emoji: '🇧🇪', color: '#d2001e' },
+  'LOT': { name: 'LOT Polish Airlines', emoji: '🇵🇱', color: '#005da0' },
+  'WDL': { name: 'WDL Aviation', emoji: '🔷', color: '#003087' },
+  'GWI': { name: 'Germanwings', emoji: '🟣', color: '#4e0080' },
+  'CLH': { name: 'Lufthansa CityLine', emoji: '🇩🇪', color: '#0530ad' },
+  'DXB': { name: 'flydubai', emoji: '🇦🇪', color: '#dc0000' },
+};
+
+const COUNTRY_FLAGS = {
+  'Germany': '🇩🇪', 'France': '🇫🇷', 'United Kingdom': '🇬🇧', 'Netherlands': '🇳🇱',
+  'Spain': '🇪🇸', 'Italy': '🇮🇹', 'Switzerland': '🇨🇭', 'Austria': '🇦🇹',
+  'Norway': '🇳🇴', 'Sweden': '🇸🇪', 'Denmark': '🇩🇰', 'Finland': '🇫🇮',
+  'Poland': '🇵🇱', 'Turkey': '🇹🇷', 'Portugal': '🇵🇹', 'Belgium': '🇧🇪',
+  'Ireland': '🇮🇪', 'Lithuania': '🇱🇹', 'Latvia': '🇱🇻', 'Estonia': '🇪🇪',
+  'United States': '🇺🇸', 'Canada': '🇨🇦', 'Qatar': '🇶🇦',
+  'United Arab Emirates': '🇦🇪', 'Ethiopia': '🇪🇹', 'Hungary': '🇭🇺',
+  'Czech Republic': '🇨🇿', 'Romania': '🇷🇴', 'Bulgaria': '🇧🇬',
+  'Greece': '🇬🇷', 'Croatia': '🇭🇷', 'Slovakia': '🇸🇰', 'Ukraine': '🇺🇦',
+};
+
+const FUN_FACTS = [
+  "🛫 Hamburg Airport (HAM) ist Deutschlands fünftgrößtes Flughafen — direkt 8km von hier!",
+  "🌍 Über Hamburg kreuzen sich die Routen von Skandinavien nach Südeuropa täglich hunderte Male.",
+  "⚡ Ein Airbus A320 fliegt mit ~840 km/h — von hier bis Hamburg Zentrum in unter 2 Sekunden.",
+  "🎯 Du stehst unter einer der meistbeflogensten Korridore Norddeutschlands.",
+  "🔊 Flugzeuge in 10km Höhe sind so laut wie ein leises Gespräch (< 30 dB) am Boden.",
+  "✈️ Der Airbus A380, der manchmal hier vorbeifliegt, wiegt bis zu 575 Tonnen.",
+  "🌐 OpenSky Network verfolgt weltweit über 25.000 Flugzeuge gleichzeitig — kostenlos!",
+  "📡 ADS-B Signale, die diese App nutzt, werden von Flugzeugen alle 0,5 Sekunden gesendet.",
+  "🏆 Lufthansa und Eurowings haben zusammen ~40% aller deutschen Kurzstreckenflüge.",
+  "🗺️ Die meisten Flieger über Poppenbüttel kommen von/nach Skandinavien, GB oder Südeuropa.",
+  "🛬 Hamburg Airport hat 2023 über 17 Millionen Passagiere abgefertigt.",
+  "⏱️ Von der Startbahn Hamburg bis Reiseflughöhe (10km) braucht ein Flieger ca. 12 Minuten.",
+];
+
+// ============================================================
+// UTILS
+// ============================================================
+function haversine(lat1, lon1, lat2, lon2) {
+  const R = 6371;
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLon = (lon2 - lon1) * Math.PI / 180;
+  const a = Math.sin(dLat/2)**2 + Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLon/2)**2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+}
+
+function getAirlineInfo(callsign) {
+  if (!callsign) return { name: 'Unbekannt', emoji: '✈️' };
+  const prefix = callsign.replace(/[0-9]/g, '').trim().toUpperCase().substring(0, 3);
+  return AIRLINES[prefix] || { name: callsign.trim(), emoji: '✈️' };
+}
+
+function formatAlt(meters) {
+  if (!meters) return 'Am Boden';
+  const ft = Math.round(meters * 3.281);
+  const km = (meters / 1000).toFixed(1);
+  return `${km}km / FL${Math.round(ft/100)}`;
+}
+
+function formatSpeed(ms) {
+  if (!ms) return '—';
+  return `${Math.round(ms * 3.6)} km/h`;
+}
+
+function bearingTo(lat1, lon1, lat2, lon2) {
+  const dLon = (lon2 - lon1) * Math.PI / 180;
+  const lat1r = lat1 * Math.PI / 180;
+  const lat2r = lat2 * Math.PI / 180;
+  const y = Math.sin(dLon) * Math.cos(lat2r);
+  const x = Math.cos(lat1r) * Math.sin(lat2r) - Math.sin(lat1r) * Math.cos(lat2r) * Math.cos(dLon);
+  return (Math.atan2(y, x) * 180 / Math.PI + 360) % 360;
+}
+
+function isApproaching(plane) {
+  if (!plane.velocity || !plane.true_track || !plane.latitude || !plane.longitude) return false;
+  const bearing = bearingTo(plane.latitude, plane.longitude, OFFICE.lat, OFFICE.lon);
+  const diff = Math.abs(((plane.true_track - bearing) + 180) % 360 - 180);
+  return diff < 60 && plane.velocity > 50;
+}
+
+// ============================================================
+// RADAR CANVAS
+// ============================================================
+function drawRadar(planes) {
+  const canvas = document.getElementById('radar-canvas');
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+  const cx = W/2, cy = H/2;
+  const maxR = W/2 - 20;
+
+  ctx.clearRect(0, 0, W, H);
+
+  // Background
+  const grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, maxR);
+  grad.addColorStop(0, 'rgba(0,40,80,0.9)');
+  grad.addColorStop(1, 'rgba(0,10,20,0.95)');
+  ctx.fillStyle = grad;
+  ctx.beginPath();
+  ctx.arc(cx, cy, maxR, 0, Math.PI*2);
+  ctx.fill();
+
+  // Grid circles
+  [0.25, 0.5, 0.75, 1.0].forEach(r => {
+    ctx.strokeStyle = 'rgba(0,212,255,0.12)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.arc(cx, cy, maxR * r, 0, Math.PI*2);
+    ctx.stroke();
+    if (r < 1) {
+      ctx.fillStyle = 'rgba(0,212,255,0.4)';
+      ctx.font = '10px monospace';
+      ctx.fillText(`${Math.round(RADIUS_KM * r)}km`, cx + maxR * r + 3, cy - 3);
+    }
+  });
+
+  // Cross lines
+  ctx.strokeStyle = 'rgba(0,212,255,0.1)';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(cx, cy - maxR); ctx.lineTo(cx, cy + maxR);
+  ctx.moveTo(cx - maxR, cy); ctx.lineTo(cx + maxR, cy);
+  ctx.stroke();
+
+  // Cardinal directions
+  ctx.fillStyle = 'rgba(0,212,255,0.5)';
+  ctx.font = '11px monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText('N', cx, cy - maxR - 6);
+  ctx.fillText('S', cx, cy + maxR + 14);
+  ctx.fillText('W', cx - maxR - 8, cy + 4);
+  ctx.fillText('E', cx + maxR + 8, cy + 4);
+
+  // Office dot
+  ctx.fillStyle = '#00ff88';
+  ctx.shadowColor = '#00ff88';
+  ctx.shadowBlur = 8;
+  ctx.beginPath();
+  ctx.arc(cx, cy, 5, 0, Math.PI*2);
+  ctx.fill();
+  ctx.shadowBlur = 0;
+  ctx.fillStyle = 'rgba(0,255,136,0.7)';
+  ctx.font = '10px sans-serif';
+  ctx.fillText('📍 Büro', cx + 8, cy + 14);
+
+  // Planes
+  planes.forEach((p, i) => {
+    if (!p.latitude || !p.longitude) return;
+    const dist = haversine(OFFICE.lat, OFFICE.lon, p.latitude, p.longitude);
+    if (dist > RADIUS_KM) return;
+
+    const angle = bearingTo(OFFICE.lat, OFFICE.lon, p.latitude, p.longitude) - 90;
+    const r = (dist / RADIUS_KM) * maxR;
+    const px = cx + r * Math.cos(angle * Math.PI/180);
+    const py = cy + r * Math.sin(angle * Math.PI/180);
+
+    const approaching = isApproaching(p);
+    const color = approaching ? '#00ff88' : '#00d4ff';
+
+    // Draw plane
+    ctx.save();
+    ctx.translate(px, py);
+    ctx.rotate(((p.true_track || 0) - 90) * Math.PI/180);
+    ctx.fillStyle = color;
+    ctx.shadowColor = color;
+    ctx.shadowBlur = 6;
+    ctx.font = '14px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('✈', 0, 5);
+    ctx.restore();
+    ctx.shadowBlur = 0;
+
+    // Label
+    const callsign = (p[1] || '').trim() || p[0].substring(0,6);
+    ctx.fillStyle = 'rgba(255,255,255,0.75)';
+    ctx.font = '9px monospace';
+    ctx.textAlign = 'left';
+    ctx.fillText(callsign, px + 10, py - 5);
+
+    // Trail line toward office if approaching
+    if (approaching) {
+      ctx.strokeStyle = 'rgba(0,255,136,0.15)';
+      ctx.lineWidth = 1;
+      ctx.setLineDash([3,4]);
+      ctx.beginPath();
+      ctx.moveTo(px, py);
+      ctx.lineTo(cx, cy);
+      ctx.stroke();
+      ctx.setLineDash([]);
+    }
+  });
+
+  // Sweep animation
+  const now = Date.now() / 1000;
+  const sweepAngle = (now % 4) / 4 * Math.PI * 2;
+  const sweepGrad = ctx.createConicalGradient ? null : null;
+  ctx.save();
+  ctx.translate(cx, cy);
+  ctx.rotate(sweepAngle - Math.PI/2);
+  const sg = ctx.createLinearGradient(0, 0, maxR, 0);
+  sg.addColorStop(0, 'rgba(0,212,255,0.25)');
+  sg.addColorStop(1, 'rgba(0,212,255,0)');
+  ctx.fillStyle = sg;
+  ctx.beginPath();
+  ctx.moveTo(0, 0);
+  ctx.arc(0, 0, maxR, -0.3, 0.3);
+  ctx.closePath();
+  ctx.fill();
+  ctx.restore();
+
+  // Border
+  ctx.strokeStyle = 'rgba(0,212,255,0.3)';
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.arc(cx, cy, maxR, 0, Math.PI*2);
+  ctx.stroke();
+}
+
+// ============================================================
+// MAIN FETCH
+// ============================================================
+let factIndex = 0;
+let timerInterval;
+let timerSeconds = 0;
+
+async function fetchFlights() {
+  const delta = 0.135 * RADIUS_KM / 15;
+  const url = `https://opensky-network.org/api/states/all?lamin=${OFFICE.lat-delta}&lomin=${OFFICE.lon-delta*1.5}&lamax=${OFFICE.lat+delta}&lomax=${OFFICE.lon+delta*1.5}`;
+
+  try {
+    const res = await fetch(url);
+    const data = await res.json();
+    const states = data.states || [];
+
+    // Map to objects
+    const planes = states.map(s => ({
+      icao: s[0], callsign: (s[1]||'').trim(), country: s[2],
+      longitude: s[5], latitude: s[6], altitude: s[7],
+      on_ground: s[8], velocity: s[9], true_track: s[10],
+      vertical_rate: s[11], geo_altitude: s[13]
+    })).filter(p => p.latitude && p.longitude);
+
+    // Sort by distance
+    planes.forEach(p => {
+      p.distance = haversine(OFFICE.lat, OFFICE.lon, p.latitude, p.longitude);
+    });
+    planes.sort((a, b) => a.distance - b.distance);
+
+    renderUI(planes);
+    drawRadar(planes.map(p => [p.icao, p.callsign, p.country, null, null, p.longitude, p.latitude, p.altitude, p.on_ground, p.velocity, p.true_track, p.vertical_rate, null, p.geo_altitude]));
+
+    document.getElementById('last-update').textContent = new Date().toLocaleTimeString('de-DE');
+    document.getElementById('live-status').textContent = `Live · ${planes.length} Flieger`;
+
+  } catch(e) {
+    document.getElementById('live-status').textContent = 'Offline';
+    console.error(e);
+  }
+
+  // Fun fact rotation
+  document.getElementById('funfact-text').textContent = FUN_FACTS[factIndex % FUN_FACTS.length];
+  factIndex++;
+}
+
+function renderUI(planes) {
+  // Hero
+  const hero = planes.length > 0 ? planes.find(p => !p.on_ground) || planes[0] : null;
+
+  if (hero) {
+    const airline = getAirlineInfo(hero.callsign);
+    const approaching = isApproaching(hero);
+    const approachText = approaching ? '⬇️ nähert sich' : hero.on_ground ? '🟢 Am Boden' : `${hero.distance.toFixed(1)}km entfernt`;
+
+    document.getElementById('hero-content').innerHTML = `
+      <div class="hero-main">
+        <h2>${hero.callsign || hero.icao.toUpperCase()}</h2>
+        <div class="route">${approachText} · ${COUNTRY_FLAGS[hero.country] || '🌍'} ${hero.country}</div>
+        <div class="hero-stats">
+          <div class="stat">
+            <div class="stat-val">${hero.altitude ? (hero.altitude/1000).toFixed(1)+'km' : '—'}</div>
+            <div class="stat-lbl">Höhe</div>
+          </div>
+          <div class="stat">
+            <div class="stat-val">${hero.velocity ? Math.round(hero.velocity*3.6)+'km/h' : '—'}</div>
+            <div class="stat-lbl">Geschw.</div>
+          </div>
+          <div class="stat">
+            <div class="stat-val">${hero.distance.toFixed(1)}km</div>
+            <div class="stat-lbl">Entfernung</div>
+          </div>
+          <div class="stat">
+            <div class="stat-val">${hero.true_track ? Math.round(hero.true_track)+'°' : '—'}</div>
+            <div class="stat-lbl">Kurs</div>
+          </div>
+        </div>
+      </div>
+      <div class="airline-badge">
+        <div class="airline-emoji">${airline.emoji}</div>
+        <div class="airline-name">${airline.name}</div>
+        <div class="airline-country">${hero.callsign || '—'}</div>
+      </div>
+    `;
+  } else {
+    document.getElementById('hero-content').innerHTML = `
+      <div class="no-planes">
+        <div class="icon">🌙</div>
+        <p>Gerade keine Flugzeuge in Reichweite</p>
+      </div>
+    `;
+  }
+
+  // Count label
+  const airborne = planes.filter(p => !p.on_ground).length;
+  document.getElementById('count-label').textContent =
+    `✈ ${planes.length} Flugzeuge in ${RADIUS_KM}km Radius — ${airborne} in der Luft`;
+
+  // Flight cards
+  const grid = document.getElementById('flights-grid');
+  if (planes.length === 0) {
+    grid.innerHTML = `<div class="no-planes" style="grid-column:1/-1"><div class="icon">🌙</div><p>Keine Flugzeuge derzeit</p></div>`;
+    return;
+  }
+
+  grid.innerHTML = planes.slice(0, 12).map((p, i) => {
+    const airline = getAirlineInfo(p.callsign);
+    const approaching = isApproaching(p);
+    const altPct = p.altitude ? Math.min(100, (p.altitude / 12000) * 100) : 0;
+    const flag = COUNTRY_FLAGS[p.country] || '🌍';
+
+    return `
+      <div class="flight-card ${i === 0 ? 'featured' : ''}">
+        ${approaching ? '<div class="approaching">Nähert sich</div>' : ''}
+        <div class="fc-top">
+          <div class="fc-callsign">${p.callsign || p.icao.toUpperCase()}</div>
+          <div class="fc-flag">${flag}</div>
+        </div>
+        <div class="fc-airline">${airline.emoji} ${airline.name}</div>
+        <div class="fc-details">
+          <span>📏 ${p.distance.toFixed(1)}km</span>
+          <span>${p.altitude ? '🔼 '+( p.altitude/1000).toFixed(1)+'km' : '🛬 Boden'}</span>
+          <span>${p.velocity ? '⚡ '+Math.round(p.velocity*3.6)+'km/h' : ''}</span>
+        </div>
+        <div class="altitude-bar">
+          <div class="altitude-fill" style="width:${altPct}%"></div>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+// ============================================================
+// TIMER BAR
+// ============================================================
+function startTimer() {
+  clearInterval(timerInterval);
+  timerSeconds = 0;
+  timerInterval = setInterval(() => {
+    timerSeconds++;
+    const pct = (timerSeconds / REFRESH_SEC) * 100;
+    document.getElementById('timer-bar').style.width = pct + '%';
+    if (timerSeconds >= REFRESH_SEC) {
+      fetchFlights();
+      timerSeconds = 0;
+    }
+  }, 1000);
+}
+
+// ============================================================
+// RADAR SWEEP (continuous animation)
+// ============================================================
+let lastPlanes = [];
+function animateRadar() {
+  drawRadar(lastPlanes);
+  requestAnimationFrame(animateRadar);
+}
+
+// Patch drawRadar to store planes
+const _origDrawRadar = drawRadar;
+window.drawRadar = function(planes) {
+  lastPlanes = planes;
+  _origDrawRadar(planes);
+};
+
+// ============================================================
+// INIT
+// ============================================================
+fetchFlights();
+startTimer();
+requestAnimationFrame(animateRadar);
+</script>
+</body>
+</html>
