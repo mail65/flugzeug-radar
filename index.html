@@ -507,6 +507,28 @@ const FUN_FACTS = [
 ];
 
 // ============================================================
+// COUNTRY FROM ICAO HEX
+function getCountryFromIcao(hex) {
+  if (!hex) return 'Unknown';
+  const h = hex.toLowerCase();
+  const map = {
+    '3c':'Germany','3d':'Germany','3e':'Germany','3f':'Germany',
+    '44':'United Kingdom','45':'United Kingdom',
+    '39':'France','3a':'France','3b':'France',
+    '48':'Netherlands','34':'Spain','35':'Spain',
+    '38':'Italy','4b':'Switzerland','4a':'Austria',
+    '47':'Norway','51':'Sweden','45':'Denmark',
+    '46':'Finland','28':'Poland','4c':'Ireland',
+    '50':'Lithuania','4d':'Latvia','4e':'Estonia',
+    '54':'Turkey','71':'United States','c0':'Canada',
+    '89':'Japan','76':'Qatar','89':'United Arab Emirates',
+    '03':'Ethiopia','49':'Belgium','50':'Lithuania',
+  };
+  const prefix = h.substring(0,2);
+  return map[prefix] || 'Unknown';
+}
+
+// ============================================================
 // UTILS
 // ============================================================
 function haversine(lat1, lon1, lat2, lon2) {
@@ -695,22 +717,45 @@ let factIndex = 0;
 let timerInterval;
 let timerSeconds = 0;
 
+// Airline lookup by ICAO hex prefix (extended)
+const ICAO_COUNTRY = {
+  '3c':'Germany','3d':'Germany','44':'UK','39':'France','48':'Netherlands',
+  '34':'Spain','38':'Italy','4b':'Switzerland','4a':'Austria','47':'Norway',
+  '51':'Sweden','45':'Denmark','46':'Finland','28':'Poland','4c':'Ireland',
+  '50':'Lithuania','54':'Turkey','71':'US','c0':'Canada',
+  '89':'Japan','76':'Qatar','89':'UAE','03':'Ethiopia',
+};
+
 async function fetchFlights() {
-  const delta = 0.135 * RADIUS_KM / 15;
-  const url = `https://opensky-network.org/api/states/all?lamin=${OFFICE.lat-delta}&lomin=${OFFICE.lon-delta*1.5}&lamax=${OFFICE.lat+delta}&lomax=${OFFICE.lon+delta*1.5}`;
+  // Using adsb.lol - free, open, CORS-friendly ADS-B API
+  const distNm = Math.round(RADIUS_KM * 0.54); // km to nautical miles
+  const url = `https://api.adsb.lol/v2/lat/${OFFICE.lat}/lon/${OFFICE.lon}/dist/${distNm}`;
 
   try {
     const res = await fetch(url);
     const data = await res.json();
-    const states = data.states || [];
+    const aircraft = data.ac || [];
 
-    // Map to objects
-    const planes = states.map(s => ({
-      icao: s[0], callsign: (s[1]||'').trim(), country: s[2],
-      longitude: s[5], latitude: s[6], altitude: s[7],
-      on_ground: s[8], velocity: s[9], true_track: s[10],
-      vertical_rate: s[11], geo_altitude: s[13]
-    })).filter(p => p.latitude && p.longitude);
+    // Map to standardized objects
+    const planes = aircraft.map(a => {
+      const altM = (a.alt_baro && a.alt_baro !== 'ground') ? a.alt_baro * 0.3048 : null;
+      const speedMs = a.gs ? a.gs * 0.5144 : null; // knots to m/s
+      return {
+        icao: a.hex || '',
+        callsign: (a.flight || '').trim(),
+        country: getCountryFromIcao(a.hex || ''),
+        longitude: a.lon,
+        latitude: a.lat,
+        altitude: altM,
+        on_ground: a.alt_baro === 'ground' || (!a.lat && !a.lon),
+        velocity: speedMs,
+        true_track: a.track || 0,
+        vertical_rate: a.geom_rate || 0,
+        geo_altitude: altM,
+        type: a.t || '',
+        reg: a.r || '',
+      };
+    }).filter(p => p.latitude && p.longitude);
 
     // Sort by distance
     planes.forEach(p => {
@@ -725,8 +770,8 @@ async function fetchFlights() {
     document.getElementById('live-status').textContent = `Live · ${planes.length} Flieger`;
 
   } catch(e) {
-    document.getElementById('live-status').textContent = 'Offline';
-    console.error(e);
+    document.getElementById('live-status').textContent = '⚠️ API Fehler';
+    console.error('Fetch error:', e);
   }
 
   // Fun fact rotation
